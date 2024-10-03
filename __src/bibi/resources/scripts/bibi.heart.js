@@ -5070,6 +5070,91 @@ I.TextSetter = { create: () => { if(!S['use-textsetter']) return;
         }).setScalePerStep(S['fontsize-scale-per-step']);
     }
     // =========================================================================================================================
+    if(S['use-linespacing-setter']) {
+        const TheLetters = new Map(Object.entries({
+            jpn: 'あ', ja: 'あ',   kor: '가', ko: '가',
+            zho: '我', zh: '我', 'zh-CN': '我', 'zh-TW': '我', 'zh-HK': '我', 'zh-SG': '我', 'zh-MO': '我',
+            ell: 'Α', el: 'Α',
+            bul: 'А', bg: 'А', kir: 'А', ky: 'А', mkd: 'А', mk: 'А', mon: 'А', mn: 'А', rus: 'А', ru: 'А', srp: 'А', sr: 'А', tgk: 'А', tg: 'А', ukr: 'А', uk: 'А',
+            kat: 'ა', ka: 'ა',  hye: 'Ա', hy: 'Ա',  amh: 'ሀ', am: 'ሀ',
+            heb: 'א', he: 'א',  ara: 'ا', ar: 'ا', fas: 'ا', fa: 'ا', pus: 'ا', ps: 'ا', urd: 'ا', ur: 'ا',
+            hin: 'अ', hi: 'अ', mar: 'अ', mr: 'अ', nep: 'अ', ne: 'अ',
+            ben: 'অ', bn: 'অ',  tam: 'அ', ta: 'அ',  sin: 'අ', si: 'අ',  tha: 'ก', th: 'ก',  lao: 'ກ', lo: 'ກ',  mya: 'က', my: 'က',  khm: 'ក', km: 'ក'
+        }));
+        const createTextNodeOfTheLetter = (Ele) => {
+            let Lang = ''; do { Lang = Ele.getAttribute('lang'); if(Lang) break; } while(Ele = Ele.parentElement);
+            return Ele.ownerDocument.createTextNode(TheLetters.get(Lang || B.Language) || 'A');
+        };
+        const getNormalLineHeight = (Item, Ele, AttStyle = Ele.style, ComStyle = getComputedStyle(Ele)) => {
+            const DF = Item.contentDocument.createDocumentFragment(), TNoL = createTextNodeOfTheLetter(Ele);
+            const AttStyleValue = Ele.getAttribute('style');
+            DF.replaceChildren(...Ele.childNodes);
+            AttStyle.setProperty('font-size', '1000px', 'important');
+            Ele.appendChild(TNoL);
+            const LH = Math.round((/-tb$/.test(ComStyle['writing-mode']) ? Ele.offsetHeight : Ele.offsetWidth) / parseFloat(ComStyle['font-size']) * 1000) / 1000;
+            TNoL.remove();
+            AttStyleValue ? Ele.setAttribute('style', AttStyleValue) : Ele.removeAttribute('style');
+            Ele.replaceChildren(...DF.childNodes);
+            return LH;
+        };
+        const CustomPropertyName = `--Bibi--LineSpacing-Setter--Scale`;
+        const letItScalable = (Val) => `calc(${ Val } * var(${ CustomPropertyName }))`;
+        const setItemLineHeightScale = (Item, Scale) => Item.HTML.style.setProperty(CustomPropertyName, Scale);
+        TextSetter.x({
+            Name: 'LineSpacing', IsResizer: true,
+            prepare: function() {
+                this.REAP.prepare('line-height', (Sty, Pro, Val) => !Number.isNaN(parseFloat(Val)) ? Val : '');
+            },
+            processItemBefore: function(Item) {
+                this.memorize(Item, {
+                    NormalRootElements: new Map()
+                });
+            },
+            processItemCSSRule: function(Item, Rule, CSSStyle) {
+                this.REAP.reap('line-height', Rule, Item); // exclude table elements with { Not: 'table,thead,tbody,tfoot,th,td' } ...? 
+            },
+            processItemElement: function(Item, Ele, AttStyle, ComStyle) {
+                if(Ele == Item.HTML || ComStyle['line-height'] != 'normal') return;
+                let NormalRootElement = false;
+                if(Ele == Item.Body) NormalRootElement = true;
+                else {
+                    const PComStyle = getComputedStyle(Ele.parentElement);
+                    if(PComStyle['line-height'] != 'normal' || PComStyle['font-family'] != ComStyle['font-family']) NormalRootElement = true;
+                    else if(this.REAP.isAffected('line-height', Ele, Item)) AttStyle.setProperty('line-height', 'inherit', 'important');
+                }
+                if(NormalRootElement) this.remember(Item).NormalRootElements.set(Ele, getNormalLineHeight(Item, Ele, AttStyle, ComStyle));
+            },
+            processItemAfter: function(Item) {
+                setItemLineHeightScale(Item, 1);
+                const Rules = this.REAP.Harvests.get('line-height').RulesOfItems.get(Item);
+                if(Rules?.size) {
+                    const SSs = Item.contentDocument.styleSheets, SS = SSs[SSs.length - 1];
+                    for(const Rule of Rules.values()) SS.insertRule(`${ Rule.selectorText } { line-height: ${ letItScalable(Rule.style['line-height']) + (Rule.style.getPropertyPriority('line-height') == 'important' ? ' !important' : '') }; }`, SS.cssRules.length);
+                }
+                const ItemSetting = this.remember(Item);
+                for(const [Ele, Val] of ItemSetting.NormalRootElements.entries()) Ele.style.setProperty('line-height', letItScalable(Val), 'important');
+                ItemSetting.NormalRootElements.clear();
+                delete ItemSetting.NormalRootElements;
+            },
+            changeItem: function(Item, Setting) {
+                const ItemSetting = this.remember(Item); if(!ItemSetting) return;
+                setItemLineHeightScale(Item, Setting.Scale);
+            },
+            createUI: function() {
+                const TextLineShapes = (TLS => `<span class="bibi-shape bibi-shape-textlines">${ TLS + TLS + TLS + TLS + TLS + TLS + TLS + TLS }</span>`)(`<span class="bibi-shape bibi-shape-textline"></span>`);
+                this.UI = this.createStepsUI([`Line Spacing`, `行間`], [
+                    [`Narrow`, `狭い`], [`Wide`, `広い`]
+                ], [
+                    [`Narrowest`, `最小`, `<span class="bibi-icon bibi-icon-linespacing bibi-icon-linespacing-narrowest">${ TextLineShapes }</span>`],
+                    [`Narrower`,  `狭い`, `<span class="bibi-icon bibi-icon-linespacing bibi-icon-linespacing-narrower">${ TextLineShapes }</span>`],
+                    [`Default`,   `標準`, `<span class="bibi-icon bibi-icon-linespacing bibi-icon-linespacing-medium">${ TextLineShapes }</span>`],
+                    [`Wider`,     `広い`, `<span class="bibi-icon bibi-icon-linespacing bibi-icon-linespacing-wider">${ TextLineShapes }</span>`],
+                    [`Widest`,    `最大`, `<span class="bibi-icon bibi-icon-linespacing bibi-icon-linespacing-widest">${ TextLineShapes }</span>`]
+                ]);
+            }
+        }).setScalePerStep(S['linespacing-scale-per-step']);
+    }
+    // =========================================================================================================================
     E.dispatch('bibi:prepared-textsetter');
     TextSetter.initialize();
     E.dispatch('bibi:created-textsetter');
