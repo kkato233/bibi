@@ -384,19 +384,23 @@ Bibi.initialize = async () => {
             if(window.parent == window) { O.HTML.classList.add('window-direct'  );                                                                         return                            0; } // false
             else                        { O.HTML.classList.add('window-embedded'); try { if(location.host == parent.location.host || parent.location.href) return 1; } catch(Err) {} return -1; } // true (1:Reachable or -1:Unreachable)
         })();
-        O.ParentBibi = O.Embedded === 1 && typeof S['parent-bibi-index'] == 'number' ? window.parent['bibi:jo'].Bibis[S['parent-bibi-index']] || null : null;
-        O.ParentOrigin = O.ParentBibi ? window.parent.location.origin : '';
+        O.JoBucket = (() => {
+            if(typeof S['parent-bibi-index'] != 'number') return null;
+            const Window = O.Embedded === 1 ? window.parent : window.opener || null;
+            return Window?.['bibi:jo']?.Buckets[S['parent-bibi-index']] || null;
+        })();
+        O.ParentOrigin = O.JoBucket ? window.parent.location.origin : '';
         O.FullscreenTarget = (() => { // Fullscreen Target
             const FsT = (() => {
-                if(!O.Embedded)  { sML.Fullscreen.polyfill(window       ); return O.HTML;             }
-                if(O.ParentBibi) { sML.Fullscreen.polyfill(window.parent); return O.ParentBibi.Frame; }
+                if(!O.Embedded) { sML.Fullscreen.polyfill(window       ); return O.HTML;             }
+                if( O.JoBucket) { sML.Fullscreen.polyfill(window.parent); return O.JoBucket.Frame; }
             })() || null;
             if(FsT && FsT.ownerDocument.fullscreenEnabled) { O.HTML.classList.add('fullscreen-enabled' ); return FsT;  }
             else                                           { O.HTML.classList.add('fullscreen-disabled'); return null; }
         })();
-        if(O.ParentBibi) {
-            O.ParentBibi.Window = window, O.ParentBibi.Document = document, O.ParentBibi.HTML = O.HTML, O.ParentBibi.Body = O.Body;
-            ['bibi:initialized', 'bibi:readied', 'bibi:prepared', 'bibi:opened'].forEach(EN => E.add(EN, Det => O.ParentBibi.dispatch(EN, Det)));
+        if(O.JoBucket) {
+            O.JoBucket.Window = window, O.JoBucket.Document = document, O.JoBucket.HTML = O.HTML, O.JoBucket.Body = O.Body;
+            ['bibi:initialized', 'bibi:readied', 'bibi:prepared', 'bibi:loaded-book', 'bibi:binded-book', 'bibi:opened'].forEach(EN => E.add(EN, Det => O.JoBucket.dispatch(EN, Det)));
             window.addEventListener('message', M.receive, false);
         }
     }
@@ -798,7 +802,7 @@ L.openNewWindow = (HRef) => {
 
 
 L.play = () => {
-    if(S['start-in-new-window']) return L.openNewWindow(location.href);
+    if(S['start-in-new-window']) return L.openNewWindow(location.href + (U['jo'] ? (/#/.test(location.href) ? '&' : '#') + `jo(` + Object.entries(U['jo']).map(([K, V]) => K + `=` + encodeURIComponent(V)).join('&') + `)` : ''));
     L.Played = true;
     R.resetStage();
     L.wait.resolve();
@@ -7370,7 +7374,7 @@ U.translateData = (PnV) => {
         case 'view-mode': case 'view': case 'rvm': _P = 'reader-view-mode'; break;
         case 'paged': case 'horizontal': case 'vertical': _V = _P, _P = 'reader-view-mode'; break;
     }
-    return [_P, _V];
+    return [_P, decodeURIComponent(_V)];
 };
 
 
@@ -8609,7 +8613,7 @@ E.aBCD = (Eve) => { // add Bibi's Collections of Data (formerly: add Bibi-Coord/
 export const M = {}; // Bibi.Messages
 
 
-M.judge = (Msg, Origin) => (O.ParentBibi && Msg && typeof Msg == 'string' && Origin && typeof Origin == 'string' && S['trustworthy-origins'].includes(Origin));
+M.judge = (Msg, Origin) => (O.JoBucket && Msg && typeof Msg == 'string' && Origin && typeof Origin == 'string' && S['trustworthy-origins'].includes(Origin));
 
 
 M.post = (Msg) => !M.judge(Msg, O.ParentOrigin) ? false : window.parent.postMessage(Msg, window.parent.location.origin);

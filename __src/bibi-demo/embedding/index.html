@@ -9,20 +9,27 @@
 	</head>
 	<body>
 		<main>
-			<!-- [Classic Embedding Tags] Default View-Mode: Paged -->
-			<a href="../../bibi/?book=__samples/Sample_Pre-Paginated_LtR.epub"
-				data-bibi="embed"
-				data-bibi-view="paged"
-				data-bibi-receive="bibi:flipped, bibi:got-to-the-beginning, bibi:got-to-the-end"
-			></a><script src="../../bibi/and/jo.js"></script>
-			<!-- [New Embedding Tags] Default View-Mode: Horizontal Scrolling -->
-			<iframe data-bibi-href="../../bibi/?book=__samples/Sample_Pre-Paginated_RtL.epub"
-				data-bibi="embed"
-				data-bibi-view="horizontal"
-				data-bibi-start-in-new-window="yes"
-				data-bibi-receive="bibi:flipped, bibi:got-to-the-beginning, bibi:got-to-the-end"
-			></iframe><script src="../../bibi/and/jo.js"></script>
-			<!-- Embed here with scripts bellow. -->
+			<ul>
+				<li><!-- #0: [Normal link with setting] Default View-Mode: Horizontal Scrolling -->
+					Link: <a href="../../bibi/?book=__samples/Sample_Pre-Paginated_LtR.epub" data-bibi="link" data-bibi-view="horizontal" data-bibi-receive="bibi:flipped, bibi:got-to-the-beginning, bibi:got-to-the-end">Open in This Window</a>
+					<script src="../../bibi/and/jo.js"></script>
+				</li>
+				<li><!-- #1: [Window opener with setting] Default View-Mode: Vertical Scrolling -->
+					Link: <a href="../../bibi/?book=__samples/Sample_Pre-Paginated_LtR.epub" data-bibi="open" data-bibi-view="vertical" data-bibi-receive="bibi:flipped, bibi:got-to-the-beginning, bibi:got-to-the-end">Open in New Window</a>
+					<script src="../../bibi/and/jo.js"></script>
+				</li>
+			</ul>
+			<ul>
+				<li><!-- #2: [Embedding with <a> (Classical)] Default View-Mode: Paged -->
+					<a href="../../bibi/?book=__samples/Sample_Pre-Paginated_LtR.epub" data-bibi="embed" data-bibi-view="paged" data-bibi-receive="bibi:flipped, bibi:got-to-the-beginning, bibi:got-to-the-end">Open Book</a>
+					<script src="../../bibi/and/jo.js"></script>
+				</li>
+				<li><!-- #3 [Embedding with <iframe> (New/Recommended)] Default View-Mode: Horizontal Scrolling -->
+					<iframe data-bibi-href="../../bibi/?book=__samples/Sample_Pre-Paginated_RtL.epub" data-bibi="embed" data-bibi-view="horizontal" data-bibi-start-in-new-window="yes" data-bibi-receive="bibi:flipped, bibi:got-to-the-beginning, bibi:got-to-the-end"></iframe>
+					<script src="../../bibi/and/jo.js"></script>
+				</li>
+				<li><!-- #4 [Embedding manually with Script (below)] --></li>
+			</ul>
 		</main>
 		<script>
 // ====================================================================================================
@@ -33,7 +40,7 @@ const Jo = window['bibi:jo'];
 
 document.addEventListener('DOMContentLoaded', function() {
 
-	const OneMoreBibi = new Jo.Bibi({
+	const OneMoreBucket = new Jo.Bucket({
 		// [Pre-Paginated:LtR] / Default View-Mode: Vertical Scrolling (Unchangeable) / Autostart
 		'bibi-href': '../../bibi/?book=__samples/Sample_Pre-Paginated_LtR.epub',
 		'bibi-style': 'width: 100%; height: 100%;',
@@ -42,39 +49,44 @@ document.addEventListener('DOMContentLoaded', function() {
 		'bibi-autostart': 'yes',
 		'bibi-receive': ['bibi:flipped', 'bibi:got-to-the-beginning', 'bibi:got-to-the-end']
 	});
-	document.querySelector('main').appendChild(OneMoreBibi.Frame);
+	document.querySelector('ul:last-of-type > li:last-of-type').append(OneMoreBucket.Frame);
 
-	Jo.Bibis.forEach(DEMO__addEventListeners);
+	Jo.Buckets.forEach(DEMO__addEventListeners);
 
 });
 
 
-const DEMO__addEventListeners = function(Bibi) {
-    
+Jo.listen('bibi:jo:embedded', (Bucket) => console.log('[Jo] Embedded', Bucket)); Jo.listen('bibi:jo:embedded-all', (Embedded) => console.log('[Jo] Embedded All', Embedded));
+Jo.listen(  'bibi:jo:opened', (Bucket) => console.log('[Jo] Opened',   Bucket)); Jo.listen(  'bibi:jo:opened-all', (  Opened) => console.log('[Jo] Opened All',     Opened));
+
+
+const DEMO__addEventListeners = function(Bucket) {
+
 	// CustomEvents which can be received from the viewer in default:
-	Bibi.Receiver.addEventListener('bibi:initialized',          DEMO__test); // bibi:initialized          ... Fires when the initializing of the settings is done.
-	Bibi.Receiver.addEventListener('bibi:readied',              DEMO__test); // bibi:readied              ... Fires when the Extensions are all loaded.
-	Bibi.Receiver.addEventListener('bibi:prepared',             DEMO__test); // bibi:prepared             ... Fires when the metadata of the book is loaded. If the Bibi is not set 'autostart', she is waiting for click/tap
-	Bibi.Receiver.addEventListener('bibi:opened',               DEMO__test); // bibi:opened               ... Fires when the the book is laid-out and is able to be read.
+	Bucket.Receiver.addEventListener('bibi:initialized',          DEMO__test); // bibi:initialized          ... Fires when the initializing of the settings is done.
+	Bucket.Receiver.addEventListener('bibi:readied',              DEMO__test); // bibi:readied              ... Fires when the Extensions are all loaded.
+	Bucket.Receiver.addEventListener('bibi:prepared',             DEMO__test); // bibi:prepared             ... Fires when the book's metadata is loaded. If 'autostart' is not set in the embedding tag, Bibi stops at this time and waits for a click/tap.
+	Bucket.Receiver.addEventListener('bibi:opened',               DEMO__test); // bibi:opened               ... Fires when the the book is laid-out and is able to be read.
 
 	// To receive events which can not be received in default, add `data-bibi-receive` attribute to the embedding tag (or add 'bibi-receive' property to the argument object).
-	Bibi.Receiver.addEventListener('bibi:flipped',              DEMO__test); // bibi:flipped              ... Fires when the user changed current page.
-	Bibi.Receiver.addEventListener('bibi:got-to-the-beginning', DEMO__test); // bibi:got-to-the-beginning ... Fires when the user got to the beginning of the book.
-	Bibi.Receiver.addEventListener('bibi:got-to-the-end',       DEMO__test); // bibi:got-to-the-end       ... Fires when the user got to the end of the book.
+	Bucket.Receiver.addEventListener('bibi:flipped',              DEMO__test); // bibi:flipped              ... Fires when the user changed current page.
+	Bucket.Receiver.addEventListener('bibi:got-to-the-beginning', DEMO__test); // bibi:got-to-the-beginning ... Fires when the user got to the beginning of the book.
+	Bucket.Receiver.addEventListener('bibi:got-to-the-end',       DEMO__test); // bibi:got-to-the-end       ... Fires when the user got to the end of the book.
 
 };
 
 
 const DEMO__test = function(Eve) { DEMO__log(Eve) || DEMO__colour(Eve); };
 
-const DEMO__log = function(Eve) { console.log('[Bibi #' + (Jo.Bibis.indexOf(Eve.srcElement.Bibi) + 1) + '] "' + Eve.type + '"', Eve.detail); }; // Log the events in console.
+const DEMO__log = function(Eve) { console.log(`[Bibi] Jo.Bucket#${ String(Jo.Buckets.indexOf(Eve.srcElement.Bucket)).padStart(2, '0') } "${ Eve.type }"`, Eve.detail); }; // Log the events in console.
 
 const DEMO__colour = function(Eve) { // Feedback the event dispatching. Its only for this testing page and the CSS is in demo.css.
-	const Frame = Eve.srcElement.Bibi.Frame;
+	const Frame = Eve.srcElement.Bucket.Frame;  if(!Frame) return;
+	const P = Frame.parentElement;
 	clearTimeout(Frame.Timer);
-	Frame.classList.remove('hot');
-	Frame.classList.add('hot');
-	Frame.Timer = setTimeout(function() { Frame.classList.remove('hot'); }, 222);
+	P.classList.remove('hot');
+	P.classList.add('hot');
+	Frame.Timer = setTimeout(function() { P.classList.remove('hot'); }, 111);
 };
 
 

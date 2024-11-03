@@ -1,8 +1,5 @@
 (() => { 'use strict';
 
-
-
-
 const World = typeof window     !== 'undefined' ? window     :
               typeof self       !== 'undefined' ? self       :
               typeof globalThis !== 'undefined' ? globalThis :
@@ -10,158 +7,150 @@ const World = typeof window     !== 'undefined' ? window     :
 
 if(!World || World['bibi:jo']) return;
 
+const BibiEventRE = /^bibi:[a-z][a-z0-9:_\-]*$/;
+const createElement = (TN, Ps) => Object.assign(document.createElement(TN), Ps);
+const href = (HRef) => typeof HRef === 'string' && HRef ? new URL(HRef, location.href)?.href || '' : '';
 
-
-
-const Jo = World['bibi:jo'] = { 'version': ENV_VERSION, Bibis: [] }, BibiEventRE = /^bibi:[a-z][a-z0-9:_\-]*$/;
-
-
-
-
-Jo.Bibi = function() { return Jo.callBibi.apply(Jo, arguments); }; // Constructor
-
-Jo.callBibi = (Love) => {
-    let Anchor = null, Frame = null, Receiver = null, ToReceive = [];
-    try {
-        if(!(Love instanceof HTMLElement)) {
-            if(Love && typeof Love == 'object') {
-                if(!Love['bibi-href']) return null;
-                Anchor = Jo.create('a', { href: Love['bibi-href'] });
-                Frame = Jo.create('iframe');
-                Receiver = Frame;
-            }
-            if(Love['bibi-receive'] instanceof Array) ToReceive = Love['bibi-receive'];
-        } else {
-            if(/^iframe$/i.test(Love.tagName)) {
-                const BibiHref = Love.getAttribute('data-bibi-href');
-                if(!BibiHref) return null;
-                Anchor = Love.parentNode.insertBefore(Jo.create('a', { href: BibiHref }), Love);
-                Frame = Love.parentNode.removeChild(Love);
-            } else if(/^a$/i.test(Love.tagName)) {
-                if(!Love.href) return null;
-                Anchor = Love;
-                Frame = Jo.create('iframe');
-                (BibiClass => BibiClass ? BibiClass.trim().replace(/\s+/, ' ').split(' ').forEach(CN => CN ? Frame.classList.add(CN) : false) : false)(Anchor.getAttribute('data-bibi-class'));
-                (BibiID    => BibiID    ? Frame.setAttribute('id',    BibiID   )                                                              : false)(Anchor.getAttribute('data-bibi-id'   ));
-                (BibiStyle => BibiStyle ? Frame.setAttribute('style', BibiStyle)                                                              : false)(Anchor.getAttribute('data-bibi-style'));
-            }
-            Receiver = Love;
-            let BibiReceive = Receiver.getAttribute('data-bibi-receive');
-            if(BibiReceive && (BibiReceive = BibiReceive.replace(/\s+/, ''))) ToReceive = BibiReceive.split(',');
+const Jo = World['bibi:jo'] = { 'version': ENV_VERSION, Buckets: [] };
+Jo.Bucket = class {
+    constructor(Love) {
+        let Index = NaN, HRef = '', JoHRef = '', Type = '', Anchor = null, Frame = null, Receiver = null;
+        let ToReceive = []; // bibi.heart.js automatically sends ['bibi:initialized', 'bibi:readied', 'bibi:prepared', 'bibi:loaded-book', 'bibi:binded-book', 'bibi:opened'].
+        if(Love) try {
+            if(Love instanceof HTMLElement) {
+                switch(Love.tagName.toLowerCase()) {
+                    case 'a':
+                        if(!(HRef = href(Love.getAttribute('href')))) throw '~';
+                        Anchor = Love;
+                        switch(Love.getAttribute('data-bibi').trim()) {
+                            case 'embed':
+                                Type = 'Embed';
+                                Frame = createElement('iframe', Object.entries({
+                                    className: Anchor.getAttribute('data-bibi-class')?.trim().replace(/\s+/g, ' '),
+                                    id:        Anchor.getAttribute('data-bibi-id')?.trim(),
+                                    style:     Anchor.getAttribute('data-bibi-style')?.trim()
+                                }).reduce((Ps, [A, V]) => V ? Object.assign(Ps, { [A]: V }) : Ps, {}));
+                                break;
+                            case 'link':          Type = 'Link'; break;
+                            case 'open': default: Type = 'Open'; break;
+                        }
+                        break;
+                    case 'iframe':
+                        if(!(HRef = href(Love.getAttribute('data-bibi-href')))) throw '~';
+                        Type = 'Embed';
+                        Anchor = Love.parentNode.insertBefore(createElement('a', { href: HRef, style: 'display: none !important;' }), Love);
+                        Frame  = Love.parentNode.removeChild(Love);
+                        break;
+                    default: throw '~';
+                }
+                Receiver = Love;
+                ToReceive = (Receive => typeof Receive === 'string' && Receive && Receive.trim().replace(/\s+/, '').split(',').filter(Boolean))(Love.getAttribute('data-bibi-receive')) || [];
+            } else if(typeof Love === 'object') {
+                if(!(HRef = href(Love['bibi-href']))) throw '~';
+                Type = 'Embed';
+                Anchor = createElement('a', { href: HRef });
+                Frame = Receiver = createElement('iframe');
+                ToReceive = (Receive => Array.isArray(Receive) && Receive.map(Receive => Receive.trim().replace(/\s+/, '')).filter(Boolean))(Love['bibi-receive']) || [];
+            } else throw '~';
+            Index = Jo.Buckets.length;
+            JoHRef = HRef + (/#/.test(HRef) ? '&' : '#') + `jo(` + [
+                ...new Map([
+                    'autostart-embedded', 'autostart',
+                    'dress',
+                    'fix-reader-view-mode', 'fix-view-mode', 'fix-view',
+                    'forget-me',
+                    'full-breadth-layout-in-scroll',
+                    'iipp',
+                    'nav',
+                    'p',
+                    'preset',
+                    'reader-view-mode', 'view-mode', 'view',
+                    'start-embedded-in-new-window', 'start-in-new-window',
+                    'sugar-for-biscuits',
+                    'uiless'
+                ].map(K => { let V;
+                    if(Love.ownerDocument) V = Love.getAttribute('data-bibi-' + K);
+                    else switch(typeof (V = Love['bibi-' + K])) { case 'number': if(V !== V) return; case 'boolean': V = String(V); }
+                    return typeof V === 'string' && (V = V.trim()) && (() => { switch(K = (() => { switch(K) {
+                        case 'autostart':                      return           'autostart-embedded';
+                        case     'view-mode': case     'view': return             'reader-view-mode';
+                        case 'fix-view-mode': case 'fix-view': return         'fix-reader-view-mode';
+                        case 'start-in-new-window':            return 'start-embedded-in-new-window';
+                    } return                                                                       K; })()) {
+                        case 'preset': case 'dress': return        /^[_\-\w\d]+(\.[_\-\w\d]+)*$/;
+                        case 'iipp':                 return  /^(0|[1-9][0-9]*)(\.[0-9]*[1-9])?$/;
+                        case 'nav':                  return                      /^[1-9][0-9]*$/;
+                        case 'p':                    return      /^[1-9][0-9]*(\.[1-9][0-9]*)*$/;
+                        case 'reader-view-mode':     return /^(auto|paged|horizontal|vertical)$/;
+                        case 'sugar-for-biscuits':   return                               /^.+$/;
+                    } return                          /^(true|false|1|0|yes|no|mobile|desktop)$/; })().test(V) && [K, V];
+                }).filter(Boolean)).entries(),
+                ['parent-bibi-index', Index]
+            ].map(([K, V]) => K + `=` + encodeURIComponent(V)).join('&') + `)`;
+        } catch(Err) { console.log(Err); Love = null; }
+        if(!Love) throw '[Jo]: constructor of Jo.Bucket requires 1 argument: an object or an a|iframe element.'; // All You Need Is Love.
+        const Bucket = Jo.Buckets[Index] = Anchor.Bucket = Object.assign(this, {
+            Index, HRef, JoHRef, Type, Anchor, Frame, Receiver, Status: '', Jo, // Window: defined in bibi.heart.js
+            listen:   (EN, fun         ) => BibiEventRE.test(EN) && Bucket.Receiver.addEventListener(EN, Eve => fun.call(Receiver, Eve.detail), false),
+            dispatch: (EN, Det = Bucket) => BibiEventRE.test(EN) && Bucket.Receiver.dispatchEvent(new CustomEvent(EN, { detail: Det })),
+            receive:  (EN              ) => BibiEventRE.test(EN) && Bucket.Window?.E.add(EN, Det => Bucket.dispatch(EN, Det)),
+            post:     (EN, V           ) => BibiEventRE.test(EN) && Bucket.Window?.postMessage(`{ "${ EN }" : "${ V }" }`, Anchor.origin)
+        });
+        Bucket.listen('bibi:initialized', (Status) => Bucket.Status = Bucket.Initialized = Status); if(ToReceive.length) Bucket.listen('bibi:initialized', () => ToReceive.forEach(EN => Bucket.receive('' + EN.trim())));
+        Bucket.listen('bibi:readied',     (Status) => Bucket.Status = Bucket.Readied     = Status);
+        Bucket.listen('bibi:prepared',    (Status) => Bucket.Status = Bucket.Prepared    = Status);
+        Bucket.listen('bibi:loaded-book', (Status) => Bucket.Status = Bucket.Loaded      = Status);
+        Bucket.listen('bibi:binded-book', (Status) => Bucket.Status = Bucket.Binded      = Status);
+        Bucket.listen('bibi:opened',      (Status) => Bucket.Status = Bucket.Opened      = Status);
+        Bucket.listen('bibi:opened',      (      ) => Object.assign(Bucket, {
+            move:        (Distance) => Bucket.post('bibi:commands:move', Distance),
+            focus:       (Target  ) => Bucket.post('bibi:commands:focus', Target),
+            changeView:  (RVM     ) => Bucket.post('bibi:commands:change-view', RVM),
+            togglePanel: (        ) => Bucket.post('bibi:commands:toggle-panel', '')
+        }));
+        Anchor.addEventListener('click', (Eve) => {
+            Eve.preventDefault();
+            Type === 'Open' ? window.open(JoHRef) : (location.href = JoHRef);
+            return false;
+        })
+        if(Jo.TrustworthyOrigins && !Jo.TrustworthyOrigins.includes(Anchor.origin)) Jo.TrustworthyOrigins.push(Anchor.origin); // It is NOT reflected to S['trustworthy-origins'].
+        if(Type == 'Embed') {
+            Frame.Bucket = Bucket;
+            Frame.classList.add('bibi-frame');
+            Frame.setAttribute('frameborder', '0');
+            Frame.setAttribute('scrolling', 'auto');
+            Frame.setAttribute('allowfullscreen', 'true');
+            Frame.src = JoHRef;
+            Bucket.embed = () => {
+                if(!Anchor.ownerDocument) return;
+                Anchor.style.setProperty('display', 'none', 'important');
+                Anchor.after(Frame);
+            };
         }
-    } catch(Err) { return null; } if(!Anchor || !Frame || !Receiver) return null;
-    const Bibi = Anchor.Bibi = Frame.Bibi = { Jo: Jo, Anchor: Anchor, Frame: Frame, Receiver: Receiver, Index: Jo.Bibis.length, Status: '' };
-    Bibi.listen   = (EN, fun)        => !BibiEventRE.test(EN) ? false : Receiver.addEventListener(EN, Eve => fun.call(Receiver, Eve.detail), false);
-    Bibi.dispatch = (EN, Det = Bibi) => !BibiEventRE.test(EN) ? false : Receiver.dispatchEvent(new CustomEvent(EN, { detail: Det }));
-    Bibi.receive  = (EN)             => !BibiEventRE.test(EN) ? false : Frame.contentWindow.E.add(EN, Det => Bibi.dispatch(EN, Det));
-    Bibi.post     = (EN, V)          => !BibiEventRE.test(EN) ? false : Frame.contentWindow.postMessage(`{ "${ EN }" : "${ V }" }`, Anchor.origin);
-    Bibi.listen('bibi:initialized', (Status) => Bibi.Status = Bibi.Initialized = Status); if(ToReceive.length) Bibi.listen('bibi:initialized', () => ToReceive.forEach(EN => Bibi.receive('' + EN.trim())));
-    Bibi.listen('bibi:readied',     (Status) => Bibi.Status = Bibi.Readied     = Status);
-    Bibi.listen('bibi:prepared',    (Status) => Bibi.Status = Bibi.Prepared    = Status);
-    Bibi.listen('bibi:loaded',      (Status) => Bibi.Status = Bibi.Loaded      = Status);
-    Bibi.listen('bibi:binded',      (Status) => Bibi.Status = Bibi.Binded      = Status);
-    Bibi.listen('bibi:opened',      (Status) => Bibi.Status = Bibi.Opened      = Status);
-    Bibi.listen('bibi:opened',      () => {
-        Bibi.move = (Distance)  => Bibi.post('bibi:commands:move', Distance);
-        Bibi.focus = (Target)   => Bibi.post('bibi:commands:focus', Target);
-        Bibi.changeView = (RVM) => Bibi.post('bibi:commands:change-view', RVM);
-        Bibi.togglePanel = ()   => Bibi.post('bibi:commands:toggle-panel', '');
-    });
-    Anchor.style.display = 'none';
-    if(Jo.TrustworthyOrigins && !Jo.TrustworthyOrigins.includes(Anchor.origin)) Jo.TrustworthyOrigins.push(Anchor.origin); // It is NOT reflected to S['trustworthy-origins'].
-    Anchor.href += (/#/.test(Anchor.href) ? '&' : '#') + (() => {
-        const Fragments = new Jo.Fragments();
-        Fragments.add('parent-bibi-index', Bibi.Index);
-        [
-            'autostart-embedded', 'autostart',
-            'dress',
-            'fix-reader-view-mode', 'fix-view-mode', 'fix-view', 'fix-rvm',
-            'forget-me',
-            'full-breadth-layout-in-scroll',
-            'iipp',
-            'nav',
-            'p',
-            'preset',
-            'reader-view-mode', 'view-mode', 'view', 'rvm',
-            'start-embedded-in-new-window', 'start-in-new-window',
-            'sugar-for-biscuits',
-            'uiless'
-        ].forEach(K => { let V;
-            if(Love.ownerDocument) V = Love.getAttribute('data-bibi-' + K);
-            else switch(typeof (V = Love['bibi-' + K])) { case 'number': if(V != V) return; case 'boolean': V = String(V); }
-            switch(typeof V) { case 'string': if(V = V.trim()) break; default: return; }
-            /**/     switch(K) { case 'autostart':                                      K = 'autostart-embedded';           break;
-                                 case     'view-mode': case     'view': case     'rvm': K = 'reader-view-mode';             break;
-                                 case 'fix-view-mode': case 'fix-view': case 'fix-rvm': K = 'fix-reader-view-mode';         break;
-                                 case 'start-in-new-window':                            K = 'start-embedded-in-new-window'; break; }
-            (() => { switch(K) { case 'preset': case 'dress': return              /^[_\-\w\d]+(\.[_\-\w\d]+)*$/;
-                                 case 'iipp': case 'p':       return                            /^(\d*\.)?\d+$/;
-                                 case 'nav':                  return                            /^[1-9][0-9]*$/;
-                                 case 'reader-view-mode':     return       /^(auto|paged|horizontal|vertical)$/;
-                                 case 'sugar-for-biscuits':   return                                     /^.+$/;
-                                 default:                     return /^(true|false|1|0|yes|no|mobile|desktop)$/; } })().test(V) && Fragments.add(K, V);
-        });
-        return Fragments.make();
-    })();
-    Frame.classList.add('bibi-frame');
-    Frame.setAttribute('frameborder', '0');
-    Frame.setAttribute('scrolling', 'auto');
-    Frame.setAttribute('allowfullscreen', 'true');
-    Frame.src = Anchor.href;
-    Jo.Bibis.push(Bibi);
-    return Bibi;
-};
-
-Jo.create = (TagName, Properties) => {
-    const Ele = document.createElement(TagName);
-    for(let Attribute in Properties) Ele[Attribute] = Properties[Attribute];
-    return Ele;
-};
-
-Jo.encode = (Str) => encodeURIComponent(Str).replace('(', '_BibiKakkoOpen_').replace(')', '_BibiKakkoClose_');
-
-Jo.Fragments = function() { // constructor
-    this.Cupboard = {};
-    this.add = function(Key, Value) { this.Cupboard[Key] = Value; };
-    this.make = function() {
-        const Keys = Object.keys(this.Cupboard);
-        if(!Keys.length) return '';
-        return `jo(` + Keys.reduce((Arr, Key) => Arr.push(Key + `=` + Jo.encode(this.Cupboard[Key])) && Arr, []).join('&') + `)`;
     };
-    return this;
 };
 
-
-
-
-if(typeof window !== 'undefined') {
-
-    Jo.StyleModule = require('./jo.scss');
-
-    Jo.TrustworthyOrigins = [location.origin];
-
-    Jo.listen   = (EN, fun)      => !BibiEventRE.test(EN) ? false : document.addEventListener(EN, Eve => fun.call(document, Eve.detail));
-    Jo.dispatch = (EN, Det = Jo) => !BibiEventRE.test(EN) ? false : document.dispatchEvent(new CustomEvent(EN, { detail: Det }));
-    Jo.judge    = (Msg, Origin)  => (Msg && typeof Msg == 'string' && Origin && typeof Origin == 'string' && Jo.TrustworthyOrigins.includes(Origin));
-
-    Jo.embed = () => {
-        const BibisToBeLoaded = [], BibisLoaded = [];
-        Array.prototype.forEach.call(document.body.querySelectorAll('*[data-bibi]'), Bed => {
-            if(Bed.getAttribute('data-bibi-processed')) return;
-            Bed.setAttribute('data-bibi-processed', 'true');
-            const Bibi = new Jo.Bibi(Bed);
-            if(Bibi) BibisToBeLoaded.push(Bibi);
-        });
-        if(!BibisToBeLoaded.length) return;
-        // Jo.listen('bibi:jo:embedded', Bibis => console.log(`[Bibi:Jo] Embedded. - ${ Bibis.length } of ${ Jo.Bibis.length }`));
-        BibisToBeLoaded.forEach(Bibi => {
-            const Anchor = Bibi.Anchor, Frame = Bibi.Frame;
-            Bibi.listen('bibi:initialized', () => (BibisLoaded.push(Bibi) < BibisToBeLoaded.length) ? false : Jo.dispatch('bibi:jo:embedded', BibisLoaded));
-            Anchor.parentNode.insertBefore(Frame, Anchor);
-        });
-    };
-
-    Jo.message = (Eve) => {
+if(typeof window !== 'undefined') Object.assign(Jo, {
+    StyleModule: require('./jo.scss'),
+    TrustworthyOrigins: [location.origin],
+    listen:   (EN, fun     ) => BibiEventRE.test(EN) && document.addEventListener(EN, Eve => fun.call(document, Eve.detail)),
+    dispatch: (EN, Det = Jo) => BibiEventRE.test(EN) && document.dispatchEvent(new CustomEvent(EN, { detail: Det })),
+    judge: (Msg, Origin) => (Msg && typeof Msg === 'string' && Origin && typeof Origin === 'string' && Jo.TrustworthyOrigins.includes(Origin)),
+    process: () => {
+        const Processed = [...document.body.querySelectorAll('*[data-bibi]')].map(LoveEle => {
+            if(LoveEle.getAttribute('data-bibi-processed')) return;
+            LoveEle.setAttribute('data-bibi-processed', 'true');
+            return new Jo.Bucket(LoveEle);
+        }).filter(Boolean);
+        if(!Processed.length) return;
+        let ToBeOpened = 0, ToBeEmbedded = 0;
+        const Opened = [], Embedded = [];
+        Processed.forEach(Bucket => { switch(Bucket.Type) {
+            case  'Open':   ToBeOpened++; Bucket.listen('bibi:initialized', () => { Jo.dispatch(  'bibi:jo:opened', Bucket);   Opened.push(Bucket) ===   ToBeOpened && Jo.dispatch(  'bibi:jo:opened-all',   Opened); });                 break;
+            case 'Embed': ToBeEmbedded++; Bucket.listen('bibi:initialized', () => { Jo.dispatch('bibi:jo:embedded', Bucket); Embedded.push(Bucket) === ToBeEmbedded && Jo.dispatch('bibi:jo:embedded-all', Embedded); }); Bucket.embed(); break;
+        } });
+    },
+    message: (Eve) => {
         if(!Eve || !Jo.judge(Eve.data, Eve.origin)) return false;
         try {
             Data = JSON.parse(Data);
@@ -169,29 +158,11 @@ if(typeof window !== 'undefined') {
             for(let EN in Data) Jo.dispatch(EN, Data[EN]);
             return true;
         } catch(Err) {} return false;
-    };
-
-    document.addEventListener('DOMContentLoaded', Jo.embed);
-    window.addEventListener('load', Jo.embed);
-    window.addEventListener('message', Jo.message);
-
-    // Polyfill: Array.prototype.includes
-    if(!Array.prototype.includes) Array.prototype.includes = function(I) { for(let l = this.length, i = 0; i < l; i++) if(this[i] == I) return true; return false; };
-
-    // Polyfill: CustomEvent Constructor
-    if(!window.CustomEvent || typeof window.CustomEvent !== 'function' && window.CustomEvent.toString().indexOf('CustomEventConstructor') === -1) {
-        window.CustomEvent = function(EventName, Arguments) {
-            Arguments = Arguments || { bubbles: false, cancelable: false, detail: undefined };
-            const Eve = document.createEvent('CustomEvent');
-            Eve.initCustomEvent(EventName, Arguments.bubbles, Arguments.cancelable, Arguments.detail);
-            return Eve;
-        };
-        window.CustomEvent.prototype = window.Event.prototype;
     }
-
-}
-
-
-
+}) && (() => {
+    document.addEventListener('DOMContentLoaded', Jo.process);
+      window.addEventListener('load',             Jo.process);
+      window.addEventListener('message',          Jo.message);
+})();
 
 })();
