@@ -1965,7 +1965,7 @@ R.renderReflowableItem = (Item) => new Promise(resolve => {
             ShadowOrThroat.appendChild(document.createElement('style')).textContent = (ShadowOrThroat != Throat ? ':host' : 'bibi-throat') + ` { ${C.L_SIZE_b}: ${PageCB}px; ${C.L_SIZE_l}: ${ItemLength}px; shape-outside: polygon(${ Polygon.join(', ') }); }`;
             Item.Neck = Item.Head.appendChild(Neck);
             Item.WithGutters = true;
-        } else if(Item.HTML['offset'+ C.L_SIZE_B] > PageCB) {
+        } else if(Item.HTML['offset'+ C.L_SIZE_B] > PageCB/* || Item.HTML['scroll'+ C.L_SIZE_L] > PageCL*/) {
             // reader-view-mode: paged | vertical,   spread-layout-axis: vertical,   Item.WritingMode: tb-** ... normal layout method for vertical-text book
             // reader-view-mode: paged | horizontal, spread-layout-axis: horizontal, Item.WritingMode: **-tb ... normal layout method for horizontal-text book
             Item.HTML.classList.add('bibi-columned');
@@ -2003,7 +2003,7 @@ R.renderReflowableItem = (Item) => new Promise(resolve => {
         (function updateL(Again) {
             const ItemScrollL = Item.HTML['scroll' + C.L_SIZE_L];
             HowManyPages = Math.ceil((ItemScrollL + PageGap) / (PageCL + PageGap));
-            if(ItemScrollL - ((PageCL + PageGap) * (HowManyPages - 1) - PageGap) < LineSpacing / 2) HowManyPages--; // Avoid white page.
+            if(ItemScrollL - ((PageCL + PageGap) * (HowManyPages - 1) - PageGap) <= LineSpacing /* < LineSpacing / 2 */) HowManyPages--; // Avoid white page.
             ItemL = (PageCL + PageGap) * HowManyPages - PageGap;
             Item.style[C.L_SIZE_l] = Item.HTML.style[C.L_SIZE_l] = ItemL + 'px';
             if(!Again) updateL('Again'); // Watch reflowing after setting styles.
@@ -2129,7 +2129,7 @@ R.layOutStage = () => {
     //E.dispatch('bibi:is-going-to:lay-out-stage');
     let MainContentLayoutLength = 0;
     R.Spreads.forEach(Spread => MainContentLayoutLength += Spread.Box['offset' + C.L_SIZE_L]);
-    const SpreadGap = B.Reflowable || S.RVM == 'paded' || (() => { switch(S['concatenate-spreads'][S.RVM == 'horizontal' ? 0 : 1]) {
+    const SpreadGap = B.Reflowable || S.RVM == 'paged' || (() => { switch(S['concatenate-spreads'][S.RVM == 'horizontal' ? 0 : 1]) {
         case 'always': return true;
         case 'never': return false;
         default: return (B.Package.Metadata['rendition:flow'] == 'scrolled-continuous' || B.Package.Metadata['scroll-direction']);
@@ -2488,7 +2488,7 @@ R.dest = (_, Opt) => { if(_ === undefined || _ === null) return null;
 
     R.getPageOfRectHeadInItem = (Rect, Item) => {
         const CoordInItem = Rect[C.L_BASE_b];
-        return Item.Pages[Math.floor((S.SLD == 'rtl' ? Item.HTML.getBoundingClientRect()[C.L_SIZE_l] - CoordInItem : CoordInItem) / R.Stage[C.L_SIZE_L])];
+        return Item.Pages[Math.floor(Math.max(0, (S.SLD == 'rtl' ? Item.HTML.getBoundingClientRect()[C.L_SIZE_l] - CoordInItem : CoordInItem) / R.Stage[C.L_SIZE_L]))];
     };
 
     R.getPageOfProgressIn = (In, Progress) => In.Pages[ Progress > 0 ? Math.min(Math.floor(In.Pages.length * Progress), In.Pages.length - 1) : 0 ];
@@ -2771,11 +2771,8 @@ R.getPageStartsWithP = (TheP) => {
 
 
 R.getIIPP = (_) => {
-    const Page = R.getPage(_);
-    if(!Page) return NaN;
-    let IIPP = Page.Item.Index;
-    if(Page.Index != 0) IIPP += Page.IndexInItem / Page.Item.Pages.length;
-    return IIPP;
+    const Page = R.getPage(_);  if(!Page) return NaN;
+    return Page.Item.Index + Page.IndexInItem / Page.Item.Pages.length;
 };
 
 R.getIIPPDestination = (IIPP) => {
