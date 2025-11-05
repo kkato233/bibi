@@ -1,3 +1,5 @@
+'use strict';
+
 import jsyaml from 'js-yaml';
 
 Bibi.x({
@@ -8,8 +10,6 @@ Bibi.x({
     version: '1.2.0'
 
 })(function() {
-
-    'use strict';
 
     this.loadZineData = () => this.setZineMode().then(this.openYAML).then(this.createPackageDocument).then(L.loadPackage.process);
 

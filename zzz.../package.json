@@ -1,14 +1,14 @@
 {
-  "name": "bibi.plays",
+  "name": "zzz...",
   "version": "2.0.0-alpha",
   "author": {
     "name": "Satoru Matsushima"
   },
-  "description": "Bibi plays...",
-  "main": "index.js",
+  "description": "zzZ...",
+  "main": "index.mjs",
   "bin": "cli.mjs",
   "dependencies": {
-    "archiver": "^6.0.1",
-    "del": "^7.1.0"
+    "archiver": "^7.0.1",
+    "del": "^8.0.1"
   }
 }

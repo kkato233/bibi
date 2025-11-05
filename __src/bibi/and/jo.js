@@ -1,3 +1,5 @@
+import './jo.scss';
+
 (() => { 'use strict';
 
 const World = typeof window     !== 'undefined' ? window     :
@@ -131,7 +133,6 @@ Jo.Bucket = class {
 };
 
 if(typeof window !== 'undefined') Object.assign(Jo, {
-    StyleModule: require('./jo.scss'),
     TrustworthyOrigins: [location.origin],
     listen:   (EN, fun     ) => BibiEventRE.test(EN) && document.addEventListener(EN, Eve => fun.call(document, Eve.detail)),
     dispatch: (EN, Det = Jo) => BibiEventRE.test(EN) && document.dispatchEvent(new CustomEvent(EN, { detail: Det })),

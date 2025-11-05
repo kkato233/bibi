@@ -1,14 +1,13 @@
-const RangeLoader = new (require('./on-the-fly.bibi-zip-loader.js'))({ url: S['book'], worker: document.currentScript.src.replace(/\.js$/, '.bibi-zip-loader.worker.js') });
+'use strict';
+
+import BibiZipLoader from './on-the-fly.bibi-zip-loader.js';
+const WorkerURL = new URL('./on-the-fly.bibi-zip-loader.worker.js', document.currentScript.src).href;
 
 Bibi.x({
 
     id: 'Extractor_on-the-fly',
     description: 'Utilities for Zipped Books. (Method: on-the-fly)',
     author: 'Satoru Matsushima (@satorumurmur)',
-    version: '1.2.1'
+    version: '1.3.0'
 
-})(function() {
-
-    O.RangeLoader = RangeLoader;
-
-});
+})(() => O.RangeLoader = new BibiZipLoader({ url: S['book'], worker: WorkerURL }));

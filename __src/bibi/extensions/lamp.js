@@ -1,10 +1,12 @@
+'use strict';
+
 import NoSleep from 'nosleep.js';
 
 Bibi.x({
 
     id: 'Lamp'
 
-})(function() {
+})(() => {
 
     const Lamp = I.Desk.Lamp = {
         KeepUntilAfter: 0,

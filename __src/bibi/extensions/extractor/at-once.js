@@ -1,3 +1,5 @@
+'use strict';
+
 import JSZip from 'jszip/dist/jszip.min.js';
 import JSZipUtils from 'jszip-utils/dist/jszip-utils.min.js';
 
@@ -8,9 +10,7 @@ Bibi.x({
     author: 'Satoru Matsushima (@satorumurmur)',
     version: '1.2.0'
 
-})(function() {
-
-    'use strict';
+})(() => {
 
     O.loadZippedBookData = (BookData) => new Promise(resolve => {
         if(S['autostart']) return resolve(BookData);

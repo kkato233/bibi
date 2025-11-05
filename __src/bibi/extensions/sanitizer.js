@@ -1,3 +1,5 @@
+'use strict';
+
 import DOMPurify from 'dompurify/dist/purify.min.js';
 
 Bibi.x({
@@ -7,7 +9,7 @@ Bibi.x({
     author: 'Satoru Matsushima (@satorumurmur)',
     version: '1.9.1'
 
-})(() => { 'use strict';
+})(() => {
 
     O.sanitizeItemSourceText = (SourceText, Opt) => {
         if(SourceText && typeof SourceText == 'string' && Opt && typeof Opt.As == 'string') {
