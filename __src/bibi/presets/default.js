@@ -50,7 +50,7 @@ Bibi.preset({
 "use-textsetter-ui"          : "yes", // "yes" | "no" | "desktop" | "mobile"
 
 "use-fontsize-setter"        : "yes", // "yes" | "no" | "desktop" | "mobile"
-"fontsize-scale-per-step"    : 1.25, // Number of scale
+"fontsize-scale-per-step"    : 1.18, // Number of scale
 "base-fontsize"              : "auto", // "auto" | Number of pixels
 
 "use-linespacing-setter"     : "yes", // "yes" | "no" | "desktop" | "mobile"

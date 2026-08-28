@@ -5036,6 +5036,7 @@ I.TextSetter = { create: () => { if(!S['use-textsetter']) return;
     if(S['use-fontsize-setter']) {
         TextSetter.x({
             Name: 'FontSize', IsResizer: true,
+            Setting: { Step: 1, Scale: 1.25 },
             prepare: function() {
                 this.REAP.prepare('font-size', (Sty, Pro, Val) => ((!Number.isNaN(parseFloat(Val)) && !/\d(%|cap|ch|r?em|ex|ic|r?lh)$/.test(Val)) || /^((xx?-)?(small|large)|smaller|larger)$/.test(Val)) ? Val : '');
             },
@@ -5117,6 +5118,7 @@ I.TextSetter = { create: () => { if(!S['use-textsetter']) return;
         const setItemLineHeightScale = (Item, Scale) => Item.HTML.style.setProperty(CustomPropertyName, Scale);
         TextSetter.x({
             Name: 'LineSpacing', IsResizer: true,
+            Setting: { Step: -1, Scale: 1 / 1.25 },
             prepare: function() {
                 this.REAP.prepare('line-height', (Sty, Pro, Val) => !Number.isNaN(parseFloat(Val)) ? Val : '');
             },
